@@ -1,4 +1,4 @@
-package JavaStackPackage;
+package HarderOnes.JavaStackPackage;
 
 import java.util.Scanner;
 import java.util.Stack;

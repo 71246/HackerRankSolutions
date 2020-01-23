@@ -1,4 +1,4 @@
-package TagContentExtractorPackage;
+package HarderOnes.TagContentExtractorPackage;
 
 import java.util.Scanner;
 

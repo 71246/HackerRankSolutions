@@ -1,5 +1,6 @@
 package HarderOnes;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,98 +25,106 @@ public class Java1DArrayPart2 {
     }
 
     public static boolean canWin(int leap, int[] game) {
-        //int[] -> StringBuilder
         StringBuilder sb = new StringBuilder();
         for (int i : game) sb.append(i);
 
         Pattern p = Pattern.compile("(1{" + leap + "})");
         Matcher m = p.matcher(sb);
 
-        if (m.find() | leap == 0 && sb.indexOf("1") >= 0) {
-            return false;
+        if (leap >= game.length) return true;
+        if (m.find() | leap < 2 && sb.indexOf("1") >= 0) return false;
+
+        if (sb.indexOf("1") == -1) {
+            return true;
         } else {
-            if (sb.indexOf("1") == -1) {
-                return true;
-            } else {
-                int index = 0;
-                boolean win = false;
+            ArrayList<Integer> landingSpots = new ArrayList<>();
+            landingSpots.add(game[0]);
 
-                while (true) {
-                    int[] range = findNextLeapSpotRange(game, index, leap, game.length);
+            while (true) {
+                try {
+                    ArrayList<Integer> maximisedImmediateArea = findExtentOfImmediateArea(game, landingSpots);
+                    landingSpots = getGoodLandingSpots(game, maximisedImmediateArea, leap);
+                } catch (IndexOutOfBoundsException | NullPointerException e) {
+                    return true;
+                }
 
-                    for (int i = index; i < range[1] + 1; i++) {
-                        int newIndex = checkLeapSpots(i, leap, game.length, game, range[1]);
-
-                        if (newIndex == -1) {
-                            win = true;
-                            break;
-                        } else {
-                            if (index == range[1]) {
-                                return false;
-                            } else if (index > game.length) {
-                                return true;
-                            }
-                            index = newIndex;
-                        }
-                    }
-
-                    if (win) {
-                        return true;
-                    }
+                if (landingSpots.size() == 0) {
+                    return false;
                 }
             }
         }
     }
 
-    public static int[] findNextLeapSpotRange(int[] game, int currentIndex, int leap, int n) {
-        int lastIndexOnLeft = currentIndex;
-        int lastIndexOnRight = currentIndex;
+    //Create index groups
+    public static ArrayList<Integer> findExtentOfImmediateArea(int[] game, ArrayList<Integer> indexes) {
+        ArrayList<Integer> outputRange = new ArrayList<>();
 
-        //Count available leaping spots to the left
-        if (currentIndex > 0) {
+        int n = game.length;
+        int lastIndexOnLeft = 0;
+        int lastIndexOnRight = 0;
+
+        for (Integer index : indexes) {
+            if (index > 0) {
+                boolean found = false;
+
+                for (int j = index - 1; j > 0; j--) {
+                    if (game[j] == 1) {
+                        lastIndexOnLeft = index - (index - j) + 1;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) lastIndexOnLeft = 0;
+            } else {
+                lastIndexOnLeft = 0;
+            }
+
+            boolean wasInThere = false;
+
+            for (int j = index + 1; j < n; j++) {
+                if (game[j] == 1) {
+                    lastIndexOnRight = index + (j - index) - 1;
+                    wasInThere = true;
+                    break;
+                }
+            }
+
+            if (!wasInThere) lastIndexOnRight = game.length - 1;
+
             boolean found = false;
-
-            for (int i = currentIndex - 1; i > 0; i--) {
-                if (game[i] == 1) {
-                    lastIndexOnLeft = currentIndex - (currentIndex - i) + 1;
+            for (int i = 0; i < outputRange.size(); i += 2) {
+                if (outputRange.get(i) == lastIndexOnLeft && outputRange.get(i + 1) == lastIndexOnRight) {
                     found = true;
                     break;
                 }
             }
-            if (!found) lastIndexOnLeft = 0;
-        }
 
-        //and to the right
-        for (int i = currentIndex + 1; i < n; i++) {
-            if (game[i] == 1) {
-                lastIndexOnRight = currentIndex + (i - currentIndex) - 1;
+            if (!found) {
+                outputRange.add(lastIndexOnLeft);
+                outputRange.add(lastIndexOnRight);
+            }
+
+            if (lastIndexOnLeft == game.length -1 || lastIndexOnRight == game.length - 1) {
+                outputRange = null;
                 break;
             }
         }
 
-        return new int[]{lastIndexOnLeft, lastIndexOnRight};
+        return outputRange;
     }
 
-    public static int checkLeapSpots(int index, int leap, int n, int[] game, int lastIndex) {
-        if (index + 1 == n) {
-            //walk across the end of array
-            return -1;
-        }
-
-        //check if any of those spots are any good
-        if (index + leap < n) {
-            if (game[index + leap] == 0 && index + leap > lastIndex) {
-                int[] spots = findNextLeapSpotRange(game, index + leap, leap, game.length);
-                return checkLeapSpots(index + leap, leap, n, game, spots[1]);
-            } else {
-                if (index + 1 < lastIndex) {
-                    return index + 1;
-                } else {
-                    return 0;
-                }
+    public static ArrayList<Integer> getGoodLandingSpots(int[] game, ArrayList<Integer> rangeOfIndexes, int leap) {
+        ArrayList<Integer> goodSpots = new ArrayList<>();
+        //go through game array from rangeOfIndexes.get(0) to rangeOfIndexes.get(1)
+        for (int i = rangeOfIndexes.get(0); i <= rangeOfIndexes.get(1); i++) {
+            //calculate index after leap
+            int indexAfterLeap = i + leap;
+            //check if the spot is 0/good spot
+            if (game[indexAfterLeap] == 0 && indexAfterLeap > rangeOfIndexes.get(1)) {
+                //add the spot to output array
+                goodSpots.add(indexAfterLeap);
             }
-        } else {
-            return -1;
         }
+        return goodSpots;
     }
 }
